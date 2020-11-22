@@ -1,0 +1,5 @@
+config PROC_INTEGRITY
+	tristate "Simple process integrity checker"
+	default y
+	help
+	  Simple process integrity checker
