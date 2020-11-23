@@ -1,8 +1,21 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * List manipulation utils for Process integrity checker Linux kernel module
+ *
+ * Copyright (C) 2020 Daniil Kovalev    <dyukovalev@edu.hse.ru>
+ * Copyright (C) 2020 Igor Shcherbakov  <ilscherbakov@edu.hse.ru>
+
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ */
+
 #include <linux/list.h>
 #include <linux/slab.h>
 #include <linux/string.h>
 
-#include "list_utils.h" 
+#include "list_utils.h"
 #include "internal.h"
 
 void clear_list(struct list_head* list)
