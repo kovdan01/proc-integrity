@@ -1,5 +1,9 @@
+#include "hash_utils.h"
+#include "internal.h"
+#include "list_utils.h"
+#include "logging.h"
+
 #include <crypto/hash.h>
-#include <crypto/streebog.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/list.h>
@@ -7,131 +11,34 @@
 #include <linux/ptrace.h>
 #include <linux/sched/mm.h>
 #include <linux/slab.h>
-#include <linux/string.h>
 #include <linux/timer.h>
 #include <linux/types.h>
-
-struct memory_section
-{
-    struct list_head list;
-
-    unsigned long start;
-    unsigned long end;
-    unsigned long flags;
-    unsigned char digest[STREEBOG512_DIGEST_SIZE];
-};
-
-static const char* LOG_PREFIX = "PROC_INTEGRITY: ";
-
-struct process_info
-{
-    int pid;
-    struct list_head* sections_list;
-};
 
 static struct process_info monitored[] = { {.pid = 1, .sections_list = NULL } };
 static size_t monitored_pids_count = 1;
 
 static struct crypto_shash* hash_alg;
 
-static const int E_HASH_NOT_IDENTICAL = 1;
-
-void clear_list(struct list_head* list)
-{
-    struct list_head* next = list->next;
-
-    while (next != list)
-    {
-        list_del(list);
-        kfree(list);
-        list = next;
-        next = list->next;
-    }
-}
-
-bool are_lists_identical(struct list_head* lhs, struct list_head* rhs)
-{
-    struct list_head* lhs_pos;
-    struct list_head* rhs_pos;
-
-    for (lhs_pos = lhs->next, rhs_pos = rhs->next;
-         lhs_pos != lhs && rhs_pos != rhs;
-         lhs_pos = lhs_pos->next, rhs_pos = rhs_pos->next)
-    {
-        struct memory_section* l = (struct memory_section*) lhs_pos;
-        struct memory_section* r = (struct memory_section*) rhs_pos;
-
-        if (l->start != r->start)
-            return false;
-        if (l->end != r->end)
-            return false;
-        if (l->flags != r->flags)
-            return false;
-        if (l->start != r->start)
-            return false;
-        if (memcmp(l->digest, r->digest, STREEBOG512_DIGEST_SIZE) != 0)
-            return false;
-    }
-
-    if (lhs_pos != lhs || rhs_pos != rhs)
-        return false;
-
-    return true;
-}
-
-struct sdesc
-{
-    struct shash_desc shash;
-    char ctx[];
-};
-
-static struct sdesc* init_sdesc(struct crypto_shash* hash_alg)
-{
-    struct sdesc *sdesc;
-    int size;
-
-    size = sizeof(struct shash_desc) + crypto_shash_descsize(hash_alg);
-    sdesc = kmalloc(size, GFP_KERNEL);
-    if (!sdesc)
-        return ERR_PTR(-ENOMEM);
-    sdesc->shash.tfm = hash_alg;
-    return sdesc;
-}
-
-static int calc_hash(struct crypto_shash* hash_alg,
-                     const unsigned char* data,
-                     unsigned int datalen,
-                     unsigned char* digest)
-{
-    struct sdesc *sdesc;
-    int ret;
-
-    sdesc = init_sdesc(hash_alg);
-    if (IS_ERR(sdesc))
-    {
-        pr_info("can't alloc sdesc\n");
-        return PTR_ERR(sdesc);
-    }
-
-    ret = crypto_shash_digest(&sdesc->shash, data, datalen, digest);
-    kfree(sdesc);
-    return ret;
-}
-
 void print_info(struct list_head* memory_sections_list, int pid)
 {
     struct memory_section* entry = NULL;
 
-    printk(KERN_INFO "%sMemory sections with VM_WRITE=false for PID=%d\n", LOG_PREFIX, pid);
-    printk(KERN_INFO "%s%16s %16s %16s\n", LOG_PREFIX, "from", "to", "flags");
+    PI_LOG_INFO("\nmemory sections with VM_WRITE=false for PID=%d\n", pid);
+    PI_LOG_INFO("%16s %16s %16s %64s\n", "from", "to", "flags", "hash");
 
     list_for_each_entry(entry, memory_sections_list, list)
     {
-        printk(KERN_INFO "%s%016lx-%016lx %016lx\n",
-               LOG_PREFIX, entry->start, entry->end, entry->flags);
+        int i;
+        char hash_buffer[2 * sizeof(entry->digest) + 1];
+        hash_buffer[2 * sizeof(entry->digest)] = '\0';
+        for (i = 0; i < sizeof(entry->digest); ++i)
+            sprintf(hash_buffer + 2 * i, "%02x", entry->digest[i]);
+
+        PI_LOG_INFO("%016lx-%016lx %016lx %s\n",
+                    entry->start, entry->end, entry->flags, hash_buffer);
     }
 
-    printk(KERN_INFO "%s\n", LOG_PREFIX);
+    PI_LOG_INFO("\n");
 }
 
 int add_memory_section(struct vm_area_struct* vma,
@@ -231,11 +138,13 @@ int inspect_process(int index)
             goto out_mm_unlock;
     }
 
-    print_info(memory_sections_list, pid);
+    if (PI_LOG_LEVEL >= PI_LOG_LEVEL_HIGH)
+        print_info(memory_sections_list, pid);
 
     if (monitored[index].sections_list != NULL)
     {
-        bool identical = are_lists_identical(monitored[index].sections_list, memory_sections_list);
+        bool identical = are_lists_identical(monitored[index].sections_list,
+                                             memory_sections_list);
         clear_list(memory_sections_list);
         if (!identical)
         {
@@ -261,7 +170,7 @@ out:
 }
 
 static struct timer_list my_timer;
-static unsigned long timer_period = 5 * HZ;
+static const unsigned long TIMER_PERIOD = 5 * HZ;
 
 void my_timer_callback(struct timer_list* timer)
 {
@@ -271,26 +180,38 @@ void my_timer_callback(struct timer_list* timer)
     {
         ret = inspect_process(i);
         if (ret == E_HASH_NOT_IDENTICAL)
-            printk(KERN_ERR "%sError: non-writeable memory section(s) changed in process with PID %d\n", LOG_PREFIX, monitored[i].pid);
+        {
+            PI_LOG_ERR_LOW("non-writeable memory section(s) changed in process "
+                           "with PID %d\n", monitored[i].pid);
+        }
         else if (ret != 0)
-            printk(KERN_ERR "%sError %d while inspecting PID %d\n", LOG_PREFIX, ret, monitored[i].pid);
+        {
+            PI_LOG_ERR_LOW("%d while inspecting PID %d\n",
+                           ret, monitored[i].pid);
+        }
+        else
+        {
+            PI_LOG_INFO_MEDIUM("non-writeable memory sections remain the same "
+                               "in process with PID %d\n", monitored[i].pid);
+        }
     }
 
-    mod_timer(timer, jiffies + timer_period);
+    mod_timer(timer, jiffies + TIMER_PERIOD);
 }
 
 static int __init proc_integrity_init(void)
 {
-    const char* hash_alg_name = "streebog512";
+    const char* hash_alg_name = "streebog256";
     hash_alg = crypto_alloc_shash(hash_alg_name, 0, 0);
     if (IS_ERR(hash_alg))
     {
-        printk(KERN_ERR "%sError %ld while alloc hash_alg %s\n", LOG_PREFIX, PTR_ERR(hash_alg), hash_alg_name);
+        PI_LOG_ERR_LOW("%ld while alloc hash_alg %s\n",
+                       PTR_ERR(hash_alg), hash_alg_name);
         return PTR_ERR(hash_alg);
     }
 
     timer_setup(&my_timer, my_timer_callback, 0);
-    mod_timer(&my_timer, jiffies + timer_period);
+    mod_timer(&my_timer, jiffies + TIMER_PERIOD);
 
     return 0;
 }
