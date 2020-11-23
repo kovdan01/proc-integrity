@@ -232,13 +232,12 @@ static int __init proc_integrity_init(void)
 static void __exit proc_integrity_exit(void)
 {
     int i;
-
-    del_timer(&my_timer);
-    crypto_free_shash(hash_alg);
-
     for (i = 0; i < monitored_pids_count; ++i)
         if (monitored[i].sections_list != NULL)
             clear_list(monitored[i].sections_list);
+
+    del_timer(&my_timer);
+    crypto_free_shash(hash_alg);
 }
 
 module_init(proc_integrity_init);
