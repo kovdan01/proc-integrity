@@ -29,7 +29,7 @@ We assume you already know how to [build your kernel](KERNEL.md)
    A menu will pop up. Find and enable the following options as built-in (*), not module (M):
 
    - Simple process integrity checker (Device Drivers)
-   - Streebog (Device Drivers)
+   - Streebog (Cryptographic API)
 
    Close the menu with saving configuration.
 
