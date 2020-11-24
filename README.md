@@ -31,6 +31,7 @@ See [Running a debuggable Linux kernel with QEMU](KERNEL.md) and [Module Build G
 ## Authors
 
 Daniil Kovalev    <dyukovalev@edu.hse.ru>
+
 Igor Shcherbakov  <ilscherbakov@edu.hse.ru>
 
 ## License
