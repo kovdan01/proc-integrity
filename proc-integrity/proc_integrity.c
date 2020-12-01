@@ -12,6 +12,7 @@
  */
 
 #include "hash_utils.h"
+#include "immediate_action.h"
 #include "internal.h"
 #include "list_utils.h"
 #include "logging.h"
@@ -21,22 +22,26 @@
 #include <linux/kernel.h>
 #include <linux/list.h>
 #include <linux/module.h>
+#include <linux/pid.h>
 #include <linux/ptrace.h>
+#include <linux/sched.h>
 #include <linux/sched/mm.h>
 #include <linux/slab.h>
 #include <linux/timer.h>
 #include <linux/types.h>
 
-static struct process_info monitored[] = { {.pid = 1, .sections_list = NULL } };
-static size_t monitored_pids_count = 1;
+#define MONITORED_PROCS_COUNT 1
+
+static struct process_info monitored[MONITORED_PROCS_COUNT];
 
 static struct crypto_shash* hash_alg;
 
-void print_info(struct list_head* memory_sections_list, int pid)
+void print_info(const struct list_head* memory_sections_list, struct task_struct* task)
 {
     struct memory_section* entry = NULL;
 
-    PI_LOG_INFO("\nmemory sections with VM_WRITE=false for PID=%d\n", pid);
+    PI_LOG_INFO("\n");
+    PI_LOG_INFO("memory sections with VM_WRITE=false for process with PID %d\n", task->pid);
     PI_LOG_INFO("%16s %16s %16s %64s\n", "from", "to", "flags", "hash");
 
     list_for_each_entry(entry, memory_sections_list, list)
@@ -110,23 +115,18 @@ out:
 
 int inspect_process(int index)
 {
-    int ret, pid;
+    int ret;
     struct vm_area_struct* vma;
     struct task_struct* task;
     struct mm_struct* mm;
     struct list_head* memory_sections_list;
 
-    pid = monitored[index].pid;
+    task = monitored[index].task;
 
     memory_sections_list = kmalloc(sizeof(struct memory_section), GFP_KERNEL);
     if (IS_ERR_OR_NULL(memory_sections_list))
         return PTR_ERR(memory_sections_list);
     INIT_LIST_HEAD(memory_sections_list);
-
-    ret = -ENOENT;
-    task = get_pid_task(find_get_pid(pid), PIDTYPE_PID);
-    if (!task)
-        goto out;
 
     ret = -EACCES;
     if (!ptrace_may_access(task, PTRACE_MODE_READ_FSCREDS))
@@ -152,7 +152,7 @@ int inspect_process(int index)
     }
 
     if (PI_LOG_LEVEL >= PI_LOG_LEVEL_HIGH)
-        print_info(memory_sections_list, pid);
+        print_info(memory_sections_list, task);
 
     if (monitored[index].sections_list != NULL)
     {
@@ -178,7 +178,7 @@ out_mm_unlock:
     mmput(mm);
 out_put_task:
     put_task_struct(task);
-out:
+
     return ret;
 }
 
@@ -189,23 +189,38 @@ void my_timer_callback(struct timer_list* timer)
 {
     int ret, i;
 
-    for (i = 0; i < monitored_pids_count; ++i)
+    static const int pids[MONITORED_PROCS_COUNT] = { 1 };
+
+    for (i = 0; i < MONITORED_PROCS_COUNT; ++i)
     {
+        if (!monitored[i].need_inspection)
+            continue;
+
+        monitored[i].task = get_pid_task(find_get_pid(pids[i]), PIDTYPE_PID);
+        if (!monitored[i].task)
+        {
+            PI_LOG_ERR_LOW("Cannot find task with PID %d\n", pids[i]);
+        }
+
         ret = inspect_process(i);
         if (ret == E_HASH_NOT_IDENTICAL)
         {
+            int imm_ret;
             PI_LOG_ERR_LOW("non-writeable memory section(s) changed in process "
-                           "with PID %d\n", monitored[i].pid);
+                           "with PID %d\n", pids[i]);
+            imm_ret = immediate_action(&monitored[i]);
+            if (imm_ret != 0)
+                PI_LOG_ERR_LOW("immediate action returned %d\n", imm_ret);
         }
         else if (ret != 0)
         {
             PI_LOG_ERR_LOW("%d while inspecting PID %d\n",
-                           ret, monitored[i].pid);
+                           ret, pids[i]);
         }
         else
         {
             PI_LOG_INFO_MEDIUM("non-writeable memory sections remain the same "
-                               "in process with PID %d\n", monitored[i].pid);
+                               "in process with PID %d\n", pids[i]);
         }
     }
 
@@ -214,7 +229,9 @@ void my_timer_callback(struct timer_list* timer)
 
 static int __init proc_integrity_init(void)
 {
+    int i;
     const char* hash_alg_name = "streebog256";
+
     hash_alg = crypto_alloc_shash(hash_alg_name, 0, 0);
     if (IS_ERR(hash_alg))
     {
@@ -222,6 +239,9 @@ static int __init proc_integrity_init(void)
                        PTR_ERR(hash_alg), hash_alg_name);
         return PTR_ERR(hash_alg);
     }
+
+    for (i = 0; i < MONITORED_PROCS_COUNT; ++i)
+        monitored[i].need_inspection = true;
 
     timer_setup(&my_timer, my_timer_callback, 0);
     mod_timer(&my_timer, jiffies + TIMER_PERIOD);
@@ -232,7 +252,7 @@ static int __init proc_integrity_init(void)
 static void __exit proc_integrity_exit(void)
 {
     int i;
-    for (i = 0; i < monitored_pids_count; ++i)
+    for (i = 0; i < MONITORED_PROCS_COUNT; ++i)
         if (monitored[i].sections_list != NULL)
             clear_list(monitored[i].sections_list);
 

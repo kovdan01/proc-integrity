@@ -31,8 +31,9 @@ struct memory_section
 
 struct process_info
 {
-    int pid;
+    struct task_struct* task;
     struct list_head* sections_list;
+    bool need_inspection;
 };
 
 #endif  // PROC_INTEGRITY_INTERNAL_H
