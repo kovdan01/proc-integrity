@@ -18,12 +18,15 @@
 
 // Log verbosity levels
 
-// Notify only when hash changes
-#define PI_LOG_LEVEL_LOW    0
-// Notify at every hash check (either successful or not)
-#define PI_LOG_LEVEL_MEDIUM 1
-// Same as PI_LOG_LEVEL_MEDIUM but also print a table of memory sections
-#define PI_LOG_LEVEL_HIGH   2
+enum
+{
+    // Notify only when hash changes
+    PI_LOG_LEVEL_LOW = 0,
+    // Notify at every hash check (either successful or not)
+    PI_LOG_LEVEL_MEDIUM = 1,
+    // Same as PI_LOG_LEVEL_MEDIUM but also print a table of memory sections
+    PI_LOG_LEVEL_HIGH = 2,
+};
 
 #define PI_LOG_LEVEL PI_LOG_LEVEL_HIGH
 
@@ -53,12 +56,12 @@
     if (PI_LOG_LEVEL >= PI_LOG_LEVEL_LOW)                   \
         PI_LOG_ERR(__VA_ARGS__);                            \
 
-#define PI_LOG_ERR_LOW(...)                                 \
-    if (PI_LOG_LEVEL >= PI_LOG_LEVEL_LOW)                   \
+#define PI_LOG_ERR_MEDIUM(...)                              \
+    if (PI_LOG_LEVEL >= PI_LOG_LEVEL_MEDIUM)                \
         PI_LOG_ERR(__VA_ARGS__);                            \
 
-#define PI_LOG_ERR_LOW(...)                                 \
-    if (PI_LOG_LEVEL >= PI_LOG_LEVEL_LOW)                   \
+#define PI_LOG_ERR_HIGH(...)                                \
+    if (PI_LOG_LEVEL >= PI_LOG_LEVEL_HIGH)                  \
         PI_LOG_ERR(__VA_ARGS__);                            \
 
 #endif  // PROC_INTEGRITY_LOGGING_H
