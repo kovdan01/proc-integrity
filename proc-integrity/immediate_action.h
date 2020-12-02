@@ -26,7 +26,7 @@ enum
     PI_IMMEDIATE_ACTION_NONE = 0,
     // Power off
     PI_IMMEDIATE_ACTION_POWEROFF = 1,
-    // Send SIGKILL to the process (note that init will not be killed)
+    // Send SIGKILL to the process
     PI_IMMEDIATE_ACTION_KILL = 2,
 };
 

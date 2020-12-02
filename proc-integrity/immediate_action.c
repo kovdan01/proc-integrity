@@ -36,7 +36,6 @@ int immediate_action(struct process_info* proc_info)
         PI_LOG_INFO_MEDIUM("attempting to kill process with PID %d",
                            proc_info->task->pid);
         ret = send_sig(SIGKILL, proc_info->task, 0);
-        proc_info->need_inspection = false;
         break;
         
     default:
