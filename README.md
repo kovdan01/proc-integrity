@@ -58,7 +58,7 @@ The following parameters can be changed in `proc_integrity.c`
 
 ### Dependencies
 
-The module requires Streebog hash enabled in the kernel. You can check the [Module Build Guide](MODULE.md) for reference on how to do this.
+The module requires Streebog hash and some tracing features enabled in the kernel. You can check the [Module Build Guide](MODULE.md) for reference on how to do this.
 
 ### Installing
 
