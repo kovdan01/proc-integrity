@@ -25,13 +25,13 @@ This parameter can be changed by setting the `PI_LOG_LEVEL` in `logging.h` (see 
 Sample output with `PI_LOG_LEVEL_HIGH`:
 
 ```
-[    8.661280] PROC_INTEGRITY: info:  memory sections with VM_WRITE=false for PID=1
+[    8.661280] PROC_INTEGRITY: info:  memory sections with VM_WRITE=false for process with PID 69
 [    8.664900] PROC_INTEGRITY: info:              from               to            flags                                                             hash
 [    8.670402] PROC_INTEGRITY: info:  0000000000400000-0000000000401000 0000000000000871 a1c270a547b226ad55a19810b7400b535b65f5c0e5cf8adcdae3726986b808d5
 [    8.676080] PROC_INTEGRITY: info:  0000000000401000-00000000004e5000 0000000000000875 bbd4459b7d681e35648ad5bd6b4351b4f1310f642829cde0a414b92ff937faaf
 [    8.681465] PROC_INTEGRITY: info:  00000000004e5000-0000000000516000 0000000000000871 4d236e72efafa35e49e7c41aacdd93016a4697034ed53fb8b25ba7abbf774206
 [    8.686863] PROC_INTEGRITY: info:
-[    8.688264] PROC_INTEGRITY: info:  non-writeable memory sections remain the same in process with PID 1
+[    8.688264] PROC_INTEGRITY: info:  non-writeable memory sections remain the same in process with PID 69
 ```
 
 ### Immediate actions settings
