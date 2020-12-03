@@ -26,10 +26,12 @@ We assume you already know how to [build your kernel](KERNEL.md)
    $ make O=/path/to/build/linux-5.9.1 menuconfig
    ```
 
-   A menu will pop up. Find and enable the following options as built-in (*), not module (M):
+   A menu will pop up. Find and enable the following options as built-in (\*), not module (M):
 
-   - Simple process integrity checker (Device Drivers)
-   - Streebog (Cryptographic API)
+   - `PROC_INTEGRITY` (Device Drivers -> Simple process integrity checker)
+   - `CRYPTO_STREEBOG` (Cryptographic API -> Streebog Hash Function)
+   - `KPROBE_EVENTS` (Kernel hacking -> Tracers -> Enable kprobes-based dynamic events)
+   - `DYNAMIC_FTRACE` (Kernel hacking -> Tracers -> Kernel Function Tracer -> enable/disable function tracing dynamically)
 
    Close the menu with saving configuration.
 
