@@ -20,7 +20,7 @@ Currently there are three verbosity settings:
 | `PI_LOG_LEVEL_MEDIUM`          | Notify at every digest check                                          |
 | `PI_LOG_LEVEL_HIGH` (default)  | Same as PI_LOG_LEVEL_MEDIUM, but also:<br> - print the memory sections table<br> - notify when a process to be inspected is created<br> - notify when a process that is inspected dies |
 
-This parameter can be changed by setting the PI_LOG_LEVEL in `logging.h` (see [here](https://github.com/kovdan01/proc-integrity/blob/fc625af5fda95d44669d4fbfac2b756bae8b1095/proc-integrity/logging.h#L31))
+This parameter can be changed by setting the `PI_LOG_LEVEL` in `logging.h` (see [here](https://github.com/kovdan01/proc-integrity/blob/fc625af5fda95d44669d4fbfac2b756bae8b1095/proc-integrity/logging.h#L31))
 
 Sample output with `PI_LOG_LEVEL_HIGH`:
 
@@ -33,6 +33,18 @@ Sample output with `PI_LOG_LEVEL_HIGH`:
 [    8.686863] PROC_INTEGRITY: info:
 [    8.688264] PROC_INTEGRITY: info:  non-writeable memory sections remain the same in process with PID 1
 ```
+
+### Immediate actions settings
+
+You can specify what action to perform when a digest change is detected. Currently there are three options:
+
+| Immediate action                         | Description                                                |
+|------------------------------------------|------------------------------------------------------------|
+| `PI_IMMEDIATE_ACTION_NONE`               | Do nothing                                                 |
+| `PI_IMMEDIATE_ACTION_POWEROFF` (default) | Call `kernel_power_off`                                    |
+| `PI_IMMEDIATE_ACTION_KILL `              | Send `SIGKILL` to a process which memory state has changed |
+
+This parameter can be changed by setting the `PI_IMMEDIATE_ACTION` in `immediate_action.h` (see [here](https://github.com/kovdan01/proc-integrity/blob/9e0927603f2579339955cee5af2df23ede54ff61/proc-integrity/immediate_action.h#L33))
 
 ### Other user-defined settings
 
