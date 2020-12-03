@@ -32,22 +32,22 @@
 
    A menu will pop up. Find and enable the following options in it:
 
-   - DEBUG_KERNEL (Kernel hacking -> Kernel debugging)
-   - DEBUG_INFO (Kernel hacking -> Compile-time checks and compiler options -> Compile the kernel with debug info)
-   - CONFIG_GDB_SCRIPTS (Kernel hacking -> Compile-time checks and compiler options -> Compile the kernel with debug info -> Provide GDB scripts for kernel debugging)
-   - CONFIG_KGDB (Kernel hacking -> Generic Kernel Debugging Instruments -> KGDB: kernel debugger)
-   - CONFIG_KGDB_SERIAL_CONSOLE (Kernel hacking -> Generic Kernel Debugging Instruments -> KGDB: kernel debugger -> KGDB: use kgdb over the serial console)
-   - UBSAN (Kernel hacking -> Generic Kernel Debugging Instruments -> Undefined behaviour sanity checker)
-   - KASAN (Kernel hacking -> Memory debugging -> KASAN: runtime memory debugger)
-   - CONFIG_KALLSYMS (General setup -> Load all symbols for debugging/ksymoops)
-   - CONFIG_KALLSYMS_ALL (General setup -> Load all symbols for debugging/ksymoops -> Include all symbols in kallsyms)
-   - CONFIG_IKCONFIG (General setup -> Kernel .config support)
-   - CONFIG_IKCONFIG_PROC (General setup -> Kernel .config support -> Enable access to .config through /proc/config.gz)
+   - `DEBUG_KERNEL` (Kernel hacking -> Kernel debugging)
+   - `DEBUG_INFO` (Kernel hacking -> Compile-time checks and compiler options -> Compile the kernel with debug info)
+   - `CONFIG_GDB_SCRIPTS` (Kernel hacking -> Compile-time checks and compiler options -> Compile the kernel with debug info -> Provide GDB scripts for kernel debugging)
+   - `CONFIG_KGDB` (Kernel hacking -> Generic Kernel Debugging Instruments -> KGDB: kernel debugger)
+   - `CONFIG_KGDB_SERIAL_CONSOLE` (Kernel hacking -> Generic Kernel Debugging Instruments -> KGDB: kernel debugger -> KGDB: use kgdb over the serial console)
+   - `UBSAN` (Kernel hacking -> Generic Kernel Debugging Instruments -> Undefined behaviour sanity checker)
+   - `KASAN` (Kernel hacking -> Memory debugging -> KASAN: runtime memory debugger)
+   - `CONFIG_KALLSYMS` (General setup -> Load all symbols for debugging/ksymoops)
+   - `CONFIG_KALLSYMS_ALL` (General setup -> Load all symbols for debugging/ksymoops -> Include all symbols in kallsyms)
+   - `CONFIG_IKCONFIG` (General setup -> Kernel .config support)
+   - `CONFIG_IKCONFIG_PROC` (General setup -> Kernel .config support -> Enable access to .config through /proc/config.gz)
 
    Press `/` and find the following options. Make sure that they are enabled. If you see that there are options that need to be enabled as preconditions for them, enable them too.
 
-   - DEBUG_BUGVERBOSE
-   - CONFIG_FRAME_POINTER
+   - `DEBUG_BUGVERBOSE`
+   - `CONFIG_FRAME_POINTER`
 
    Close the menu with saving configuration.
 
@@ -80,7 +80,7 @@
    $ make O=../../build/busybox-1.32.0 menuconfig
    ```
 
-   A menu will pop up. Find and enable STATIC option in Settings -> Build static binary (no shared libs). Also set CROSS_COMPILER_PREFIX to `musl-` in Settings -> Cross compiler prefix. Close the menu with saving configuration.
+   A menu will pop up. Find and enable `STATIC` option in Settings -> Build static binary (no shared libs). Also set `CROSS_COMPILER_PREFIX` to `musl-` in Settings -> Cross compiler prefix. Close the menu with saving configuration.
 
 7. Go to `kernel-module/build/busybox-1.32.0` and build BusyBox:
 
